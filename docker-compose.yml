@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  blogapp:
+    build: .
+    container_name: blogapp
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules  # Prevents overwriting node_modules
+
+    command: npm run dev
