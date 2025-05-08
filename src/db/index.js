@@ -10,8 +10,8 @@ const sequelize = new Sequelize(
   {
     //   host: process.env.DB_HOST,
     // host: cred.DB_HOST,
-    // host: "127.0.0.1",
-    host: "mysql-container-2", // here container name
+    host: "127.0.0.1",
+    // host: "mysql-container", // here container name
     // port:3306,
     dialect: "mysql",
     // dialect: "postgres",
