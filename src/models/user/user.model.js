@@ -109,6 +109,7 @@ const User = (sequelize, DataTypes) => {
     User.hasMany(models.Article, { foreignKey: "author_id" });
     User.hasMany(models.Comment, { foreignKey: "user_id" });
     User.hasMany(models.Clap, { foreignKey: "user_id" });
+    User.hasMany(models.Subscription, { foreignKey: "user_id" });
   };
 
   return User;
