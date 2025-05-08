@@ -9,3 +9,10 @@
 ### Stop docker compose
 
 `docker-compose down` or `ctrl+c`
+
+### On Chnages rebubild docker compose
+
+```bash
+docker-compose down
+docker-compose up --build
+```
