@@ -27,6 +27,8 @@ const UserProfile = (sequelize, DataTypes) => {
   UserProfile.associate = (models) => {
     UserProfile.belongsTo(models.User, { foreignKey: "user_id" });
   };
+
+  return UserProfile;
 };
 
 export default UserProfile;

@@ -23,10 +23,6 @@ const User = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      username: {
-        type: DataTypes.STRING(50),
-        unique: true,
-      },
       is_verified: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
@@ -48,11 +44,7 @@ const User = (sequelize, DataTypes) => {
     {
       paranoid: true, // Enables soft deletes (adds 'deleted_at')
       timestamps: true, // Adds 'created_at' and 'updated_at'
-      indexes: [
-        { unique: true, fields: ["email"] },
-        { unique: true, fields: ["username"] },
-        { fields: ["role"] },
-      ],
+      indexes: [{ unique: true, fields: ["email"] }, { fields: ["role"] }],
     }
   );
 
@@ -82,7 +74,6 @@ const User = (sequelize, DataTypes) => {
       {
         user_id: this.user_id,
         email: this.email,
-        username: this.username,
         role: this.role,
       },
       process.env.ACCESS_TOKEN_SECRET,

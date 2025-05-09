@@ -10,9 +10,6 @@ import { verifyJwt } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-
 // profile
 router.get("/me", verifyJwt, getProfile);
 router.get("/:userId", getProfile);

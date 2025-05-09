@@ -11,7 +11,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: "16kb" }));
+app.use(express.json({ limit: "25kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(cookieParser());
 
@@ -20,7 +20,11 @@ app.use(cookieParser());
 // });
 
 import userRouter from "./routes/user/user.routes.js";
+import subscriptionRouter from "./routes/subscription/subscription.routes.js";
+import userProfileRouter from "./routes/user/userprofile.routes.js";
 
 app.use("/api/auth", userRouter);
+app.use("/api/subscription", subscriptionRouter);
+app.use("/api/user", userProfileRouter);
 
 export { app };
