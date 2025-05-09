@@ -1,8 +1,11 @@
-import { User, UserProfile } from "../../models/index.js";
+// import { User, UserProfile } from "../../models/index.js";
+import db from "../../models/index.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Model, Op } from "sequelize";
 import sequelize from "../../db/index.js";
+
+const { User, UserProfile } = db;
 
 const registerUser = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -365,7 +368,7 @@ const getProfile = async (req, res) => {
       include: [
         {
           model: User,
-          attributes: ["email", "created_at"],
+          attributes: ["email", "createdAt"],
           as: "user",
         },
       ],
@@ -385,10 +388,12 @@ const getProfile = async (req, res) => {
         bio: profile.bio,
         profile_image_url: profile.profile_image_url,
         email: profile.user?.email,
-        joined: profile.user?.created_at,
+        joined: profile.user?.createdAt,
       },
     });
   } catch (error) {
+    console.error("Error in getProfile:", error); // This helps debug
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch profile",
@@ -400,6 +405,16 @@ const updateProfile = async (req, res) => {
   try {
     const { username, bio, profile_image_url } = req.body;
     const userId = req.user.user_id;
+
+    console.log(req.body);
+    console.log(userId);
+
+    if (!req.body) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing request body",
+      });
+    }
 
     // Validate username uniqueness
     if (username) {
@@ -415,27 +430,56 @@ const updateProfile = async (req, res) => {
       }
     }
 
-    const [updated] = await UserProfile.update(
-      { username, bio, profile_image_url },
-      {
-        where: { user_id: userId },
-        returning: true,
-      }
-    );
+    let profile = await UserProfile.findByPk(userId);
 
-    if (!updated) {
-      return res.status(404).json({
-        success: false,
-        message: "Profile not found",
+    if (profile) {
+      // Update existing profile
+      await profile.update({ username, bio, profile_image_url });
+
+      return res.status(200).json({
+        success: true,
+        message: "Profile updated successfully",
+        username_set: !!username,
+      });
+    } else {
+      // Create new profile
+      profile = await UserProfile.create({
+        user_id: userId,
+        username,
+        bio,
+        profile_image_url,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Profile created successfully",
+        username_set: !!username,
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      username_set: !!username, // Indicate if username was added
-    });
+    // const [updated] = await UserProfile.update(
+    //   { username, bio, profile_image_url },
+    //   {
+    //     where: { user_id: userId },
+    //     returning: true,
+    //   }
+    // );
+
+    // if (!updated) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "Profile not found",
+    //   });
+    // }
+
+    // return res.status(200).json({
+    //   success: true,
+    //   message: "Profile updated successfully",
+    //   username_set: !!username, // Indicate if username was added
+    // });
   } catch (error) {
+    console.error("Error in update Profile:", error); // This helps debug
+
     return res.status(500).json({
       success: false,
       message: "Profile update failed",
