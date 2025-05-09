@@ -24,8 +24,15 @@ const UserProfile = (sequelize, DataTypes) => {
     }
   );
 
+  // UserProfile.associate = (models) => {
+  //   UserProfile.belongsTo(models.User, { foreignKey: "user_id" });
+  // };
+
   UserProfile.associate = (models) => {
-    UserProfile.belongsTo(models.User, { foreignKey: "user_id" });
+    UserProfile.belongsTo(models.User, {
+      foreignKey: "user_id",
+      as: "user", // This must match what you use in the include
+    });
   };
 
   return UserProfile;
