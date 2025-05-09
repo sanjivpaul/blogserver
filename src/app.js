@@ -25,6 +25,6 @@ import userProfileRouter from "./routes/user/userprofile.routes.js";
 
 app.use("/api/auth", userRouter);
 app.use("/api/subscription", subscriptionRouter);
-app.use("/api/user", userProfileRouter);
+app.use("/api/profile", userProfileRouter);
 
 export { app };

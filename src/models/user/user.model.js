@@ -27,8 +27,6 @@ const User = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      //   profile_image_url: DataTypes.STRING,
-      //   bio: DataTypes.TEXT,
       role: {
         type: DataTypes.ENUM("user", "writer", "admin"),
         defaultValue: "user",
@@ -94,7 +92,10 @@ const User = (sequelize, DataTypes) => {
 
   // Associations defined inside the model
   User.associate = (models) => {
-    User.hasOne(models.UserProfile, { foreignKey: "user_id" });
+    User.hasOne(models.UserProfile, {
+      as: "UserProfile",
+      foreignKey: "user_id",
+    });
     User.hasOne(models.UserSecurity, { foreignKey: "user_id" });
     User.hasOne(models.UserPreferences, { foreignKey: "user_id" });
     User.hasMany(models.Article, { foreignKey: "author_id" });

@@ -6,7 +6,8 @@ const sequelize = new Sequelize(
   // process.env.DB_PASSWORD,
   "blogdb",
   "root",
-  "Uk123456@",
+  // "Uk123456@",
+  "sanjiv123",
   {
     //   host: process.env.DB_HOST,
     // host: cred.DB_HOST,

@@ -7,6 +7,7 @@ import sequelize from "../../db/index.js";
 
 const { User, UserProfile } = db;
 
+// AUTH
 const registerUser = async (req, res) => {
   const transaction = await sequelize.transaction();
 
@@ -43,19 +44,8 @@ const registerUser = async (req, res) => {
 
     // Check for existing user
     const existingUser = await User.findOne({
-      // where: {
-      //   [Op.or]: [{ email }, { username }],
-      // },
       where: { email },
     });
-
-    // if (existingUser) {
-    //   const conflictField = existingUser.email === email ? "email" : "username";
-    //   return res.status(409).json({
-    //     success: false,
-    //     message: `${conflictField} already exists`,
-    //   });
-    // }
 
     if (existingUser) {
       return res.status(409).json({
@@ -226,51 +216,17 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // const isEmail = emailRegex.test(emailOrUsername);
-
-    // if (isEmail) {
-    //   // Find user by email
-    //   const user = await User.findOne({
-    //     where: { email: emailOrUsername },
-    //   });
-    // } else {
-    //   // Login with username - check UserProfile
-    //   const userProfile = await UserProfile.findOne({
-    //     where: { username: emailOrUsername },
-    //     include: [{ model: User }],
-    //   });
-
-    //   if (!userProfile?.User) {
-    //     return res.status(404).json({
-    //       success: false,
-    //       message:
-    //         "Username not set up yet. Please login with your email address.",
-    //       hint: "Complete your profile setup to enable username login",
-    //     });
-    //   }
-
-    // user = userProfile.User;
-    // }
-
     // Always treat input as email first
     let user = await User.findOne({
       where: { email: emailOrUsername },
-      include: [UserProfile], // Include profile
+      include: [{ model: UserProfile, as: "UserProfile" }], // Add alias
     });
-
-    // if (!user) {
-    //   return res.status(404).json({
-    //     success: false,
-    //     message: "User not found",
-    //   });
-    // }
 
     // If no user found, check if identifier is username
     if (!user) {
       const profile = await UserProfile.findOne({
         where: { username: emailOrUsername },
-        include: [User],
+        include: [{ model: User, as: "user" }], // Add alias
       });
 
       if (!profile?.User) {
@@ -306,28 +262,6 @@ const loginUser = async (req, res) => {
       sameSite: "strict",
     });
 
-    // // Prepare user response
-    // const userResponse = {
-    //   user_id: user.user_id,
-    //   email: user.email,
-    //   // username: user.username,
-    //   role: user.role,
-    //   is_verified: user.is_verified,
-    //   last_login: user.last_login,
-    // };
-
-    // // Include username if profile exists
-    // if (user.UserProfile) {
-    //   userResponse.username = user.UserProfile.username;
-    // }
-
-    // return res.status(200).json({
-    //   success: true,
-    //   message: "Login successful",
-    //   user: userResponse,
-    //   accessToken,
-    // });
-
     // Response structure
     const responseData = {
       user_id: user.user_id,
@@ -360,6 +294,7 @@ const loginUser = async (req, res) => {
   }
 };
 
+// PROFILE
 const getProfile = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.user_id;
@@ -505,5 +440,9 @@ const deleteProfile = async (req, res) => {
     });
   }
 };
+
+// PREFERENCE
+
+// SECURITY
 
 export { registerUser, loginUser, getProfile, updateProfile, deleteProfile };

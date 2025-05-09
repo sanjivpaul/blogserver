@@ -2,8 +2,6 @@ import express from "express";
 import {
   deleteProfile,
   getProfile,
-  loginUser,
-  registerUser,
   updateProfile,
 } from "../../controllers/user/user.controller.js";
 import { verifyJwt } from "../../middlewares/auth.middleware.js";
