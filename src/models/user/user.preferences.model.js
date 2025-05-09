@@ -12,13 +12,13 @@ export default (sequelize, DataTypes) => {
         },
       },
       preferences: {
-        type: DataTypes.JSONB,
+        type: DataTypes.JSON,
         defaultValue: {
           notifications: true,
           theme: "light",
         },
       },
-      social_links: DataTypes.JSONB,
+      social_links: DataTypes.JSON,
     },
     {
       timestamps: false,
