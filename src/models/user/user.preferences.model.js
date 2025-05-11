@@ -25,5 +25,12 @@ export default (sequelize, DataTypes) => {
     }
   );
 
+  UserPreferences.associate = (models) => {
+    UserPreferences.belongsTo(models.User, {
+      foreignKey: "user_id",
+      as: "user", // This must match what you use in the include
+    });
+  };
+
   return UserPreferences;
 };

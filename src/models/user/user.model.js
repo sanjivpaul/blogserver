@@ -1,6 +1,3 @@
-// models/User.js
-// import sequelize from "../../db/index.js";
-// import { DataTypes } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -93,11 +90,17 @@ const User = (sequelize, DataTypes) => {
   // Associations defined inside the model
   User.associate = (models) => {
     User.hasOne(models.UserProfile, {
-      as: "UserProfile",
+      as: "userProfile",
       foreignKey: "user_id",
     });
-    User.hasOne(models.UserSecurity, { foreignKey: "user_id" });
-    User.hasOne(models.UserPreferences, { foreignKey: "user_id" });
+    User.hasOne(models.UserSecurity, {
+      as: "UserSecurity",
+      foreignKey: "user_id",
+    });
+    User.hasOne(models.UserPreferences, {
+      as: "userPreferences",
+      foreignKey: "user_id",
+    });
     User.hasMany(models.Article, { foreignKey: "author_id" });
     User.hasMany(models.Comment, { foreignKey: "user_id" });
     User.hasMany(models.Clap, { foreignKey: "user_id" });

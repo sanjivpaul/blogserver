@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import { Model, Op } from "sequelize";
 import sequelize from "../../db/index.js";
 
-const { User, UserProfile } = db;
+const { User, UserProfile, UserPreferences } = db;
 
 // AUTH
 const registerUser = async (req, res) => {
@@ -219,7 +219,7 @@ const loginUser = async (req, res) => {
     // Always treat input as email first
     let user = await User.findOne({
       where: { email: emailOrUsername },
-      include: [{ model: UserProfile, as: "UserProfile" }], // Add alias
+      include: [{ model: UserProfile, as: "userProfile" }], // Add alias
     });
 
     // If no user found, check if identifier is username
@@ -442,7 +442,252 @@ const deleteProfile = async (req, res) => {
 };
 
 // PREFERENCE
+const getPreferences = async (req, res) => {
+  try {
+    const userId = req.params.userId || req.user.user_id;
+    // console.log("userId===>", userId);
+
+    const preferences = await UserPreferences.findByPk(userId, {
+      include: [
+        {
+          model: User,
+          attributes: ["email"],
+          as: "user",
+        },
+      ],
+    });
+
+    // console.log("preferences===>", preferences);
+
+    if (!preferences) {
+      return res.status(404).json({
+        success: false,
+        message: "Preferences not found",
+      });
+    }
+
+    // Sanitize response
+    const response = {
+      preferences: preferences.preferences,
+      social_links: preferences.social_links,
+      user: {
+        username: preferences.user?.username,
+        email: preferences.user?.email,
+      },
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: response,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch preferences",
+    });
+  }
+};
+
+// Create/Initialize preferences
+const createPreferences = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+
+    const existing = await UserPreferences.findByPk(userId);
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "Preferences already exist for this user",
+      });
+    }
+
+    const preferences = await UserPreferences.create({
+      user_id: userId,
+      ...req.body,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Preferences initialized",
+      data: preferences,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create preferences",
+    });
+  }
+};
+
+// Update preferences
+const updatePreferences = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    console.log("userId===>", userId);
+
+    const validFields = ["preferences", "social_links"];
+
+    // Filter valid update fields
+    const updates = Object.keys(req.body)
+      .filter((key) => validFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key] = req.body[key];
+        return obj;
+      }, {});
+
+    // Perform the update (don't rely on affectedRows)
+    await UserPreferences.update(updates, {
+      where: { user_id: userId },
+    });
+
+    // Fetch the updated preferences manually (since MySQL doesn't support RETURNING)
+    const updatedPreferences = await UserPreferences.findByPk(userId, {
+      include: [
+        {
+          model: User,
+          attributes: ["email"],
+          as: "user",
+        },
+      ],
+    });
+
+    if (!updatedPreferences) {
+      return res.status(404).json({
+        success: false,
+        message: "Preferences not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Preferences updated",
+      data: {
+        preferences: updatedPreferences.preferences,
+        social_links: updatedPreferences.social_links,
+        user: {
+          username: updatedPreferences.user?.username,
+          email: updatedPreferences.user?.email,
+        },
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update preferences",
+    });
+  }
+};
+
+// // Update preferences with MySQL JSON handling
+// const updatePreferences = async (req, res) => {
+//   const transaction = await sequelize.transaction();
+//   try {
+//     const userId = req.user.user_id;
+//     const validFields = ["preferences", "social_links"];
+
+//     // MySQL JSON field update handling
+//     const updates = {};
+//     if (req.body.preferences) {
+//       updates.preferences = sequelize.fn(
+//         "JSON_MERGE_PATCH",
+//         sequelize.col("preferences"),
+//         req.body.preferences
+//       );
+//     }
+
+//     if (req.body.social_links) {
+//       updates.social_links = sequelize.fn(
+//         "JSON_MERGE_PATCH",
+//         sequelize.col("social_links"),
+//         req.body.social_links
+//       );
+//     }
+
+//     const [affectedRows] = await UserPreferences.update(updates, {
+//       where: { user_id: userId },
+//       transaction,
+//     });
+
+//     if (affectedRows === 0) {
+//       await transaction.rollback();
+//       return res.status(404).json({
+//         success: false,
+//         message: "Preferences not found",
+//       });
+//     }
+
+//     const updatedPrefs = await UserPreferences.findOne({
+//       where: { user_id: userId },
+//       transaction,
+//     });
+
+//     await transaction.commit();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Preferences updated",
+//       data: {
+//         preferences: updatedPrefs.preferences,
+//         social_links: updatedPrefs.social_links,
+//       },
+//     });
+//   } catch (error) {
+//     await transaction.rollback();
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to update preferences",
+//       error: process.env.NODE_ENV === "development" ? error : undefined,
+//     });
+//   }
+// };
+
+// Reset preferences (MySQL transaction-safe)
+const deletePreferences = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const userId = req.user.user_id;
+
+    await UserPreferences.destroy({
+      where: { user_id: userId },
+      transaction,
+    });
+
+    // Recreate with MySQL JSON defaults
+    await UserPreferences.create(
+      {
+        user_id: userId,
+        preferences: { notifications: true, theme: "light" },
+        social_links: {},
+      },
+      { transaction }
+    );
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Preferences reset to default",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(500).json({
+      success: false,
+      message: "Failed to reset preferences",
+      error: process.env.NODE_ENV === "development" ? error : undefined,
+    });
+  }
+};
 
 // SECURITY
 
-export { registerUser, loginUser, getProfile, updateProfile, deleteProfile };
+export {
+  registerUser,
+  loginUser,
+  getProfile,
+  updateProfile,
+  deleteProfile,
+  getPreferences,
+  createPreferences,
+  updatePreferences,
+  deletePreferences,
+};
