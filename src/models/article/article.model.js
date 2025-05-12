@@ -16,6 +16,10 @@ const Article = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      author_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
       status: {
         type: DataTypes.ENUM("draft", "published"),
         defaultValue: "draft",

@@ -294,6 +294,64 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Upgrade role
+const upgradeToWriter = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const user = await User.findByPk(req.user.user_id, { transaction });
+
+    // Prevent admins from downgrading
+    if (user.role === "admin") {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Admins cannot change roles via this endpoint",
+      });
+    }
+
+    // Already a writer
+    if (user.role === "writer") {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "You are already a writer",
+      });
+    }
+
+    // Optional: Add eligibility checks
+    const profileComplete = await checkProfileCompletion(user.user_id);
+    if (!profileComplete) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Complete your profile to become a writer",
+      });
+    }
+
+    // Upgrade role
+    await user.update({ role: "writer" }, { transaction });
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Role upgraded to writer successfully",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(500).json({
+      success: false,
+      message: "Role upgrade failed",
+    });
+  }
+};
+
+// Optional eligibility checker
+const checkProfileCompletion = async (userId) => {
+  const profile = await UserProfile.findOne({ where: { user_id: userId } });
+  return profile?.bio && profile?.username; // Example: Require bio and username
+};
+
 // PROFILE
 const getProfile = async (req, res) => {
   try {
@@ -832,6 +890,7 @@ const resetFailedAttempts = async (userId) => {
 export {
   registerUser,
   loginUser,
+  upgradeToWriter,
   getProfile,
   updateProfile,
   deleteProfile,
