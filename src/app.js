@@ -25,6 +25,7 @@ import userProfileRouter from "./routes/user/userprofile.routes.js";
 import userPreferencesRouter from "./routes/user/userpreferences.routes.js";
 import userSecurityRouter from "./routes/user/usersecurity.routes.js";
 import articleRouter from "./routes/article/article.routes.js";
+import tagRouter from "./routes/tag/tag.routes.js";
 
 app.use("/api/auth", userRouter);
 app.use("/api/subscription", subscriptionRouter);
@@ -32,5 +33,6 @@ app.use("/api/profile", userProfileRouter);
 app.use("/api/preferences", userPreferencesRouter);
 app.use("/api/security", userSecurityRouter);
 app.use("/api/article", articleRouter);
+app.use("/api/tags", tagRouter);
 
 export { app };
