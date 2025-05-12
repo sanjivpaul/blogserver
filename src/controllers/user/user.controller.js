@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import { Model, Op } from "sequelize";
 import sequelize from "../../db/index.js";
 
-const { User, UserProfile, UserPreferences } = db;
+const { User, UserProfile, UserPreferences, UserSecurity } = db;
 
 // AUTH
 const registerUser = async (req, res) => {
@@ -578,69 +578,6 @@ const updatePreferences = async (req, res) => {
   }
 };
 
-// // Update preferences with MySQL JSON handling
-// const updatePreferences = async (req, res) => {
-//   const transaction = await sequelize.transaction();
-//   try {
-//     const userId = req.user.user_id;
-//     const validFields = ["preferences", "social_links"];
-
-//     // MySQL JSON field update handling
-//     const updates = {};
-//     if (req.body.preferences) {
-//       updates.preferences = sequelize.fn(
-//         "JSON_MERGE_PATCH",
-//         sequelize.col("preferences"),
-//         req.body.preferences
-//       );
-//     }
-
-//     if (req.body.social_links) {
-//       updates.social_links = sequelize.fn(
-//         "JSON_MERGE_PATCH",
-//         sequelize.col("social_links"),
-//         req.body.social_links
-//       );
-//     }
-
-//     const [affectedRows] = await UserPreferences.update(updates, {
-//       where: { user_id: userId },
-//       transaction,
-//     });
-
-//     if (affectedRows === 0) {
-//       await transaction.rollback();
-//       return res.status(404).json({
-//         success: false,
-//         message: "Preferences not found",
-//       });
-//     }
-
-//     const updatedPrefs = await UserPreferences.findOne({
-//       where: { user_id: userId },
-//       transaction,
-//     });
-
-//     await transaction.commit();
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Preferences updated",
-//       data: {
-//         preferences: updatedPrefs.preferences,
-//         social_links: updatedPrefs.social_links,
-//       },
-//     });
-//   } catch (error) {
-//     await transaction.rollback();
-//     return res.status(500).json({
-//       success: false,
-//       message: "Failed to update preferences",
-//       error: process.env.NODE_ENV === "development" ? error : undefined,
-//     });
-//   }
-// };
-
 // Reset preferences (MySQL transaction-safe)
 const deletePreferences = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -680,6 +617,218 @@ const deletePreferences = async (req, res) => {
 
 // SECURITY
 
+// Get security settings (for current user)
+const getSecurity = async (req, res) => {
+  try {
+    const security = await UserSecurity.findOne({
+      where: { user_id: req.user.user_id },
+      attributes: ["two_factor_secret", "failed_login_attempts"],
+      include: [
+        {
+          model: User,
+          attributes: ["email"],
+          as: "user",
+          required: true,
+        },
+      ],
+    });
+
+    if (!security) {
+      return res.status(404).json({
+        success: false,
+        message: "Security settings not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        email: security.user.email,
+        twoFactorEnabled: !!security.two_factor_secret,
+        failedAttempts: security.failed_login_attempts,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch security settings",
+    });
+  }
+};
+
+// Update security settings (2FA setup)
+// const updateSecurity = async (req, res) => {
+//   const transaction = await sequelize.transaction();
+//   try {
+//     const { action, token } = req.body;
+
+//     const security = await UserSecurity.findOne({
+//       where: { user_id: req.user.user_id },
+//       transaction,
+//     });
+
+//     if (!security) {
+//       await transaction.rollback();
+//       return res.status(404).json({
+//         success: false,
+//         message: "Security settings not found",
+//       });
+//     }
+
+//     switch (action) {
+//       case "enable-2fa":
+//         security.two_factor_secret = generate2FASecret(); // Implement your 2FA generation
+//         break;
+
+//       case "disable-2fa":
+//         if (!verify2FAToken(security.two_factor_secret, token)) {
+//           // Implement verification
+//           await transaction.rollback();
+//           return res.status(401).json({
+//             success: false,
+//             message: "Invalid 2FA token",
+//           });
+//         }
+//         security.two_factor_secret = null;
+//         break;
+
+//       default:
+//         await transaction.rollback();
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid security action",
+//         });
+//     }
+
+//     await security.save({ transaction });
+//     await transaction.commit();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Security settings updated",
+//     });
+//   } catch (error) {
+//     await transaction.rollback();
+//     return res.status(500).json({
+//       success: false,
+//       message: "Security update failed",
+//     });
+//   }
+// };
+
+// Updated updateSecurity controller
+const updateSecurity = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { action, token } = req.body;
+    const userId = req.user.user_id;
+
+    // Find or create security settings
+    let security = await UserSecurity.findOne({
+      where: { user_id: userId },
+      transaction,
+    });
+
+    if (!security) {
+      // Create new security entry if not exists
+      security = await UserSecurity.create(
+        {
+          user_id: userId,
+          failed_login_attempts: 0,
+          password_reset_token: null,
+          two_factor_secret: null,
+        },
+        { transaction }
+      );
+    }
+
+    switch (action) {
+      case "enable-2fa":
+        security.two_factor_secret = generate2FASecret();
+        break;
+
+      case "disable-2fa":
+        if (!verify2FAToken(security.two_factor_secret, token)) {
+          await transaction.rollback();
+          return res.status(401).json({
+            success: false,
+            message: "Invalid 2FA token",
+          });
+        }
+        security.two_factor_secret = null;
+        break;
+
+      default:
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "Invalid security action",
+        });
+    }
+
+    await security.save({ transaction });
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Security settings updated",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(500).json({
+      success: false,
+      message: "Security update failed",
+      error: process.env.NODE_ENV === "development" ? error : undefined,
+    });
+  }
+};
+
+// Password reset token management (system triggered)
+const handlePasswordResetToken = async (userId) => {
+  const token = crypto.randomBytes(32).toString("hex");
+  const hashedToken = await bcrypt.hash(token, 10);
+
+  await UserSecurity.update(
+    {
+      password_reset_token: hashedToken,
+      password_reset_expires: Date.now() + 3600000, // 1 hour
+    },
+    {
+      where: { user_id: userId },
+    }
+  );
+
+  return token;
+};
+
+// Failed login attempts (system triggered)
+const handleFailedLogin = async (userId) => {
+  await UserSecurity.increment("failed_login_attempts", {
+    where: { user_id: userId },
+  });
+
+  const security = await UserSecurity.findOne({
+    where: { user_id: userId },
+    attributes: ["failed_login_attempts"],
+  });
+
+  if (security.failed_login_attempts >= 5) {
+    // Implement account lockout logic
+  }
+};
+
+// Reset failed attempts (admin/successful login)
+const resetFailedAttempts = async (userId) => {
+  await UserSecurity.update(
+    {
+      failed_login_attempts: 0,
+    },
+    {
+      where: { user_id: userId },
+    }
+  );
+};
+
 export {
   registerUser,
   loginUser,
@@ -690,4 +839,9 @@ export {
   createPreferences,
   updatePreferences,
   deletePreferences,
+  getSecurity,
+  updateSecurity,
+  handlePasswordResetToken,
+  handleFailedLogin,
+  resetFailedAttempts,
 };
