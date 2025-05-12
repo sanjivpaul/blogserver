@@ -23,10 +23,12 @@ import userRouter from "./routes/user/user.routes.js";
 import subscriptionRouter from "./routes/subscription/subscription.routes.js";
 import userProfileRouter from "./routes/user/userprofile.routes.js";
 import userPreferencesRouter from "./routes/user/userpreferences.routes.js";
+import userSecurityRouter from "./routes/user/usersecurity.routes.js";
 
 app.use("/api/auth", userRouter);
 app.use("/api/subscription", subscriptionRouter);
 app.use("/api/profile", userProfileRouter);
 app.use("/api/preferences", userPreferencesRouter);
+app.use("/api/security", userSecurityRouter);
 
 export { app };

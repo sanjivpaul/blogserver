@@ -1,6 +1,6 @@
 // models/UserSecurity.js
 export default (sequelize, DataTypes) => {
-  return sequelize.define(
+  const UserSecurity = sequelize.define(
     "UserSecurity",
     {
       user_id: {
@@ -22,4 +22,13 @@ export default (sequelize, DataTypes) => {
       paranoid: true, // Optional soft deletes
     }
   );
+
+  UserSecurity.associate = (models) => {
+    UserSecurity.belongsTo(models.User, {
+      foreignKey: "user_id",
+      as: "user", // This must match what you use in the include
+    });
+  };
+
+  return UserSecurity;
 };
