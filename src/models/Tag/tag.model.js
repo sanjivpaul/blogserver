@@ -17,11 +17,44 @@ const Tag = (sequelize, DataTypes) => {
   );
 
   Tag.associate = (models) => {
+    // Tag.belongsToMany(models.Article, {
+    //   through: "ArticleTags",
+    //   as: "articles",
+    // });
+
     Tag.belongsToMany(models.Article, {
-      through: "ArticleTags",
+      through: models.ArticleTag, // ✅ Use the actual model
+      foreignKey: "tag_id",
+      otherKey: "article_id",
       as: "articles",
     });
   };
+
+  // Tag.associate = (models) => {
+  //   // Association with Articles (Many-to-Many)
+  //   Tag.belongsToMany(models.Article, {
+  //     through: models.ArticleTag, // Use model instead of table name
+  //     foreignKey: "tag_id",
+  //     otherKey: "article_id",
+  //     as: "articles",
+  //     onDelete: "CASCADE", // Add cascade delete
+  //   });
+
+  // // Association with Users (Many-to-Many through TagFollows)
+  // Tag.belongsToMany(models.User, {
+  //   through: models.TagFollow,
+  //   foreignKey: "tag_id",
+  //   otherKey: "user_id",
+  //   as: "followers",
+  //   onDelete: "CASCADE",
+  // });
+
+  // // Additional direct association if needed
+  // Tag.hasMany(models.TagFollow, {
+  //   foreignKey: "tag_id",
+  //   as: "tagFollowRelations",
+  // });
+  // };
 
   return Tag;
 };

@@ -74,6 +74,7 @@ import initClapModel from "./clap/clap.model.js";
 import initPlanModel from "./plan/plan.model.js";
 import initSubscriptionModel from "./subscription/subscription.model.js";
 import initWriterEarningModel from "./writerearnings/writerearning.model.js";
+// import initTagFollowModel from "./tagfollow/tagfollow.model.js";
 
 // 1. Initialize all models
 const User = initUserModel(sequelize, DataTypes);
@@ -88,6 +89,7 @@ const Clap = initClapModel(sequelize, DataTypes);
 const Plan = initPlanModel(sequelize, DataTypes);
 const Subscription = initSubscriptionModel(sequelize, DataTypes);
 const WriterEarning = initWriterEarningModel(sequelize, DataTypes);
+// const TagFollow = initTagFollowModel(sequelize, DataTypes);
 
 // 2. Create an object with all models
 const db = {
@@ -103,6 +105,7 @@ const db = {
   Plan,
   Subscription,
   WriterEarning,
+  // TagFollow,
 };
 
 // 3. Call associate() on each model (if defined)
@@ -126,6 +129,7 @@ export {
   Plan,
   Subscription,
   WriterEarning,
+  // TagFollow,
 };
 
 export default db;

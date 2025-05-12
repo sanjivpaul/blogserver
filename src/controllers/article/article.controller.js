@@ -1,5 +1,6 @@
 import { Article, User, Tag } from "../../models/index.js";
 import sequelize from "../../db/index.js";
+import { Op } from "sequelize";
 
 // Create Article (Writer/Admin only)
 const createArticle = async (req, res) => {
@@ -42,40 +43,40 @@ const createArticle = async (req, res) => {
 
     console.log("article===>", article);
 
-    // // Handle tags
-    // if (tags && tags.length > 0) {
-    //   const tagInstances = await Tag.findAll({
-    //     where: { name: { [Op.in]: tags } },
-    //     transaction,
-    //   });
-    //   await article.setTags(tagInstances, { transaction });
-    // }
-
-    // Handle tags (create missing, associate all)
+    // Handle tags
     if (tags && tags.length > 0) {
-      const tagInstances = [];
-
-      const existingTags = await Tag.findAll({
+      const tagInstances = await Tag.findAll({
         where: { name: { [Op.in]: tags } },
         transaction,
       });
-
-      const existingTagNames = existingTags.map((tag) => tag.name);
-      tagInstances.push(...existingTags);
-
-      const missingTagNames = tags.filter(
-        (tag) => !existingTagNames.includes(tag)
-      );
-
-      // Create new tags if they don't exist
-      for (const tagName of missingTagNames) {
-        const newTag = await Tag.create({ name: tagName }, { transaction });
-        tagInstances.push(newTag);
-      }
-
-      // Associate all tags with the article
       await article.setTags(tagInstances, { transaction });
     }
+
+    // // Handle tags (create missing, associate all)
+    // if (tags && tags.length > 0) {
+    //   const tagInstances = [];
+
+    //   const existingTags = await Tag.findAll({
+    //     where: { name: { [Op.in]: tags } },
+    //     transaction,
+    //   });
+
+    //   const existingTagNames = existingTags.map((tag) => tag.name);
+    //   tagInstances.push(...existingTags);
+
+    //   const missingTagNames = tags.filter(
+    //     (tag) => !existingTagNames.includes(tag)
+    //   );
+
+    //   // Create new tags if they don't exist
+    //   for (const tagName of missingTagNames) {
+    //     const newTag = await Tag.create({ name: tagName }, { transaction });
+    //     tagInstances.push(newTag);
+    //   }
+
+    //   // Associate all tags with the article
+    //   await article.setTags(tagInstances, { transaction });
+    // }
 
     await transaction.commit();
 
@@ -91,6 +92,8 @@ const createArticle = async (req, res) => {
     });
   } catch (error) {
     await transaction.rollback();
+    console.error("Create article error:", error); // 👈 Add this line
+
     return res.status(500).json({
       success: false,
       message: "Failed to create article",

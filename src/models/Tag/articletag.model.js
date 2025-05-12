@@ -3,7 +3,7 @@ const ArticleTag = (sequelize, DataTypes) => {
   return sequelize.define(
     "ArticleTag",
     {},
-    { timestamps: false, tableName: "ArticleTags" }
+    { timestamps: true, tableName: "ArticleTags" }
   );
 };
 
