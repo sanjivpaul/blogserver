@@ -93,7 +93,7 @@ const getTagArticles = async (req, res) => {
             {
               model: User,
               as: "author",
-              attributes: ["user_id", "username"],
+              attributes: ["user_id"],
             },
           ],
           through: { attributes: [] },
@@ -126,4 +126,87 @@ const getTagArticles = async (req, res) => {
   }
 };
 
-export { createTag, getAllTags, getTagArticles };
+// Update Tag (Admin only)
+const updateTag = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const { name } = req.body;
+    const tag = await Tag.findByPk(req.params.tagId, { transaction });
+
+    if (!tag) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Tag not found",
+      });
+    }
+
+    if (name) {
+      const existingTag = await Tag.findOne({
+        where: { name },
+        transaction,
+      });
+
+      if (existingTag) {
+        await transaction.rollback();
+        return res.status(409).json({
+          success: false,
+          message: "Tag name already exists",
+        });
+      }
+
+      tag.name = name;
+    }
+
+    await tag.save({ transaction });
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Tag updated successfully",
+      tag: {
+        tag_id: tag.tag_id,
+        name: tag.name,
+      },
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update tag",
+    });
+  }
+};
+
+// Delete Tag (Admin only)
+const deleteTag = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const tag = await Tag.findByPk(req.params.tagId, { transaction });
+
+    if (!tag) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Tag not found",
+      });
+    }
+
+    await tag.destroy({ transaction });
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Tag deleted successfully",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete tag",
+    });
+  }
+};
+
+export { createTag, getAllTags, getTagArticles, updateTag, deleteTag };
