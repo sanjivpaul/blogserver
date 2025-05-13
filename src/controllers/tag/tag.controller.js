@@ -93,7 +93,7 @@ const getTagArticles = async (req, res) => {
             {
               model: User,
               as: "author",
-              attributes: ["user_id", "username"],
+              attributes: ["user_id"],
             },
           ],
           through: { attributes: [] },
