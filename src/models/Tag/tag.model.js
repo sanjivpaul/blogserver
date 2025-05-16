@@ -21,12 +21,24 @@ const Tag = (sequelize, DataTypes) => {
     //   through: "ArticleTags",
     //   as: "articles",
     // });
+    Tag.belongsToMany(models.User, {
+      through: models.TagFollow,
+      foreignKey: "tag_id",
+      otherKey: "user_id",
+      as: "followers",
+      onDelete: "CASCADE",
+    });
 
     Tag.belongsToMany(models.Article, {
       through: models.ArticleTag, // ✅ Use the actual model
       foreignKey: "tag_id",
       otherKey: "article_id",
       as: "articles",
+    });
+
+    Tag.hasMany(models.TagFollow, {
+      foreignKey: "tag_id",
+      as: "tagFollowRelations",
     });
   };
 

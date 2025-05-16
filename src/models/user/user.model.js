@@ -103,6 +103,17 @@ const User = (sequelize, DataTypes) => {
     });
     User.hasMany(models.Article, { foreignKey: "author_id" });
     // User.hasMany(models.Tag, { as: "author", foreignKey: "tag_id" });
+    User.belongsToMany(models.Tag, {
+      through: models.TagFollow,
+      foreignKey: "user_id",
+      otherKey: "tag_id",
+      as: "followedTags",
+      onDelete: "CASCADE",
+    });
+    User.hasMany(models.TagFollow, {
+      foreignKey: "user_id",
+      as: "tagFollowRelations",
+    });
     User.hasMany(models.Comment, { foreignKey: "user_id" });
     User.hasMany(models.Clap, { foreignKey: "user_id" });
     User.hasMany(models.Subscription, { foreignKey: "user_id" });
