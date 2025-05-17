@@ -27,6 +27,7 @@ import userSecurityRouter from "./routes/user/usersecurity.routes.js";
 import articleRouter from "./routes/article/article.routes.js";
 import tagRouter from "./routes/tag/tag.routes.js";
 import tagFollowRouter from "./routes/tagfollow/tagfollow.routes.js";
+// add here subscription router
 
 app.use("/api/auth", userRouter);
 app.use("/api/subscription", subscriptionRouter);
